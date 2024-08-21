@@ -36,18 +36,25 @@ CORS(app)
 def scrape():
     data = request.json  # Obtener el cuerpo de la solicitud como JSON
     url = data.get('url')  # Obtener la URL del JSON
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, como Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
     session = requests.Session()
-    response = session.get(url, headers=headers)
 
-    if response.status_code == 200:
+    try:
+        response = session.get(url, headers=headers)
+        response.raise_for_status()  # Lanza un error si la respuesta no es 200
+
         soup = BeautifulSoup(response.content, 'html.parser')
         nodos = soup.select('.upload-link')
         capitulos = [nodo.select_one('a').get_text() for nodo in nodos if nodo.select_one('a')]
+        
         return jsonify({'capitulos': capitulos, 'total': len(capitulos)})
-    else:
-        return jsonify({'error': f'Error al acceder a la página: {response.status_code}'}), 500
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error al acceder a la página: {str(e)}'}), 500
+
+    except Exception as e:
+        return jsonify({'error': f'Ocurrió un error inesperado: {str(e)}'}), 500
 
 if __name__ == '__main__':
     #app.run(debug=True)
